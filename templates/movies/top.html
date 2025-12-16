@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}排行榜 - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">排行榜</h4>
+        <p class="text-muted mb-0">按评分排序，可筛选地区和类型。</p>
+    </div>
+    <a class="btn btn-outline-dark" href="{% url 'movie_list' %}">去影片库</a>
+</div>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+        <label class="form-label">地区</label>
+        <select class="form-select" name="region">
+            <option value="">全部</option>
+            {% for r in regions %}
+                <option value="{{ r }}" {% if request.GET.region == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">类型</label>
+        <select class="form-select" name="type">
+            <option value="">全部</option>
+            {% for t in types %}
+                <option value="{{ t }}" {% if request.GET.type == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-dark w-100" type="submit">筛选</button>
+    </div>
+    <div class="col-md-2">
+        <a class="btn btn-light w-100" href="{% url 'top' %}">重置</a>
+    </div>
+</form>
+
+<div class="row g-3">
+    {% for m in page_obj %}
+    <div class="col-6 col-md-3">
+        <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+            {% with m.poster|default:m.cover_url as cover %}
+            {% if cover %}
+            <div class="ratio ratio-2x3">
+                <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+            </div>
+            {% endif %}
+            {% endwith %}
+            <div class="card-body">
+                <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
+                <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <p class="text-muted">暂无数据</p>
+    {% endfor %}
+</div>
+
+{% include "components/pagination.html" %}
+{% endblock %}
+

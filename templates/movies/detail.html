@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ movie.title }} - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="glass p-3 rounded-4">
+            {% with movie.poster|default:movie.cover_url as cover %}
+            {% if cover %}
+            <div class="ratio ratio-2x3 mb-3">
+                <img src="{{ cover }}" class="rounded-4 object-fit-cover w-100 h-100" alt="{{ movie.title }}">
+            </div>
+            {% endif %}
+            {% endwith %}
+            <h4 class="mb-1">{{ movie.title }}</h4>
+            <p class="text-muted mb-2">{{ movie.region }} · {{ movie.type }}</p>
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-dark rounded-pill">评分 {{ movie.score|default:"-" }}</span>
+                <span class="badge bg-secondary rounded-pill">{{ movie.date|default:"未知" }}</span>
+            </div>
+            <p class="text-muted small mb-1">演员：{{ movie.actors }}</p>
+
+            {% if user.is_authenticated %}
+            <div class="d-flex align-items-center gap-2 mt-3">
+                <button class="btn btn-dark btn-sm" id="btn-fav" data-url="{% url 'toggle_favorite_api' movie.pk %}">
+                    {% if action and action.is_favorite %}取消收藏{% else %}收藏{% endif %}
+                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" id="input-rating" step="0.1" min="0" max="10" class="form-control form-control-sm" placeholder="0-10" value="{{ action.rating|default:'' }}">
+                    <button class="btn btn-outline-dark btn-sm" id="btn-rate" data-url="{% url 'rate_movie_api' movie.pk %}">提交评分</button>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-light mt-3 mb-0">
+                <a href="{% url 'login' %}">登录</a> 后可收藏和评分
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="glass p-4 rounded-4 mb-3">
+            <h5 class="mb-3">简介</h5>
+            <p class="mb-0 text-muted" style="white-space: pre-line;">{{ movie.summary }}</p>
+        </div>
+        <div class="glass p-4 rounded-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">相似影片</h5>
+                <a class="text-decoration-none" href="{% url 'recommend' %}">更多推荐</a>
+            </div>
+            <div class="row g-3">
+                {% for m in related %}
+                <div class="col-6 col-md-4">
+                    <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+                        {% with m.poster|default:m.cover_url as cover %}
+                        {% if cover %}
+                        <div class="ratio ratio-2x3">
+                            <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <div class="card-body">
+                            <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                            <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
+                            <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">暂无相似影片</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    const favBtn = document.getElementById('btn-fav');
+    if (favBtn) {
+        favBtn.addEventListener('click', async () => {
+            const url = favBtn.dataset.url;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrftoken}
+            });
+            if (res.ok) {
+                const data = await res.json();
+                favBtn.textContent = data.is_favorite ? '取消收藏' : '收藏';
+            }
+        });
+    }
+
+    const rateBtn = document.getElementById('btn-rate');
+    if (rateBtn) {
+        rateBtn.addEventListener('click', async () => {
+            const url = rateBtn.dataset.url;
+            const val = document.getElementById('input-rating').value;
+            const formData = new FormData();
+            formData.append('rating', val);
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrftoken},
+                body: formData
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert(`已评分 ${data.rating}`);
+            } else {
+                alert('评分失败，请重试');
+            }
+        });
+    }
+</script>
+{% endblock %}
+

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}影片库 - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">影片库</h4>
+        <p class="text-muted mb-0">支持搜索、筛选与排序。</p>
+    </div>
+    <a class="btn btn-outline-dark" href="{% url 'top' %}">看排行榜</a>
+</div>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+        <label class="form-label">关键词</label>
+        <input class="form-control" type="text" name="q" value="{{ keyword }}" placeholder="片名/演员/简介">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">地区</label>
+        <select class="form-select" name="region">
+            <option value="">全部</option>
+            {% for r in regions %}
+                <option value="{{ r }}" {% if region == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">类型</label>
+        <select class="form-select" name="type">
+            <option value="">全部</option>
+            {% for t in types %}
+                <option value="{{ t }}" {% if mtype == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">排序</label>
+        <select class="form-select" name="sort">
+            <option value="-date" {% if sort == "-date" %}selected{% endif %}>最新优先</option>
+            <option value="-score" {% if sort == "-score" %}selected{% endif %}>评分优先</option>
+            <option value="date" {% if sort == "date" %}selected{% endif %}>最早优先</option>
+            <option value="score" {% if sort == "score" %}selected{% endif %}>评分从低到高</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-dark w-100" type="submit">筛选</button>
+    </div>
+    <div class="col-md-2">
+        <a class="btn btn-light w-100" href="{% url 'movie_list' %}">重置</a>
+    </div>
+</form>
+
+<div class="row g-3">
+    {% for m in page_obj %}
+    <div class="col-6 col-md-3">
+        <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+            {% with m.poster|default:m.cover_url as cover %}
+            {% if cover %}
+            <div class="ratio ratio-2x3">
+                <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+            </div>
+            {% endif %}
+            {% endwith %}
+            <div class="card-body">
+                <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
+                <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <p class="text-muted">暂无数据</p>
+    {% endfor %}
+</div>
+
+{% include "components/pagination.html" %}
+{% endblock %}
+

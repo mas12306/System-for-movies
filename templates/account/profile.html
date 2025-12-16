@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}个人中心 - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="glass p-4 rounded-4 mb-4">
+            <h4 class="mb-3">个人信息</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small mb-1">用户名</div>
+                        <div class="fw-semibold">{{ user_obj.username }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small mb-1">昵称</div>
+                        <div class="fw-semibold">{{ user_obj.nickname }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small mb-1">邮箱</div>
+                        <div class="fw-semibold">{{ user_obj.email }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small mb-1">性别 / 年龄</div>
+                        <div class="fw-semibold">{{ user_obj.get_sex_display }} / {{ user_obj.age|default:"-" }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small mb-1">注册时间</div>
+                        <div class="fw-semibold">{{ user_obj.registration }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 bg-light">
+                        <div class="text-muted small mb-1">上次登录</div>
+                        <div class="fw-semibold">{{ user_obj.last_login }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass p-4 rounded-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">我的收藏</h5>
+                <span class="text-muted small">点击可查看影片详情</span>
+            </div>
+            <div class="row g-3">
+                {% for a in favorites %}
+                <div class="col-6 col-md-3">
+                    <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' a.movie.pk %}">
+                        {% with a.movie.poster|default:a.movie.cover_url as cover %}
+                        {% if cover %}
+                        <div class="ratio ratio-2x3">
+                            <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ a.movie.title }}">
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <div class="card-body">
+                            <h6 class="card-title text-truncate mb-1">{{ a.movie.title }}</h6>
+                            <p class="text-muted small mb-1 text-truncate">{{ a.movie.region }} · {{ a.movie.type }}</p>
+                            <span class="badge bg-dark rounded-pill">评分 {{ a.movie.score|default:"-" }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">暂无收藏</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="glass p-4 rounded-4 mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">我的评分</h5>
+                <span class="text-muted small">展示你已打分的影片</span>
+            </div>
+            <div class="row g-3">
+                {% for a in rated %}
+                <div class="col-6 col-md-3">
+                    <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' a.movie.pk %}">
+                        {% with a.movie.poster|default:a.movie.cover_url as cover %}
+                        {% if cover %}
+                        <div class="ratio ratio-2x3">
+                            <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ a.movie.title }}">
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <div class="card-body">
+                            <h6 class="card-title text-truncate mb-1">{{ a.movie.title }}</h6>
+                            <p class="text-muted small mb-1 text-truncate">{{ a.movie.region }} · {{ a.movie.type }}</p>
+                            <span class="badge bg-dark rounded-pill">我的评分 {{ a.rating|default:"-" }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">暂无评分</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

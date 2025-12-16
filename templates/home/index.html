@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}首页 - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="hero d-flex flex-column flex-md-row align-items-center justify-content-between mb-4">
+    <div class="hero-text">
+        <p class="text-muted mb-2">电影推荐 · 精选</p>
+        <h2 class="fw-bold mb-3">发现更符合你口味的好片</h2>
+        <p class="text-muted mb-4">基于评分、热度和类型的推荐，后续将支持个性化算法。</p>
+        <div class="d-flex gap-2">
+            <a class="btn btn-dark" href="{% url 'recommend' %}">开始推荐</a>
+            <a class="btn btn-outline-dark" href="{% url 'movie_list' %}">浏览影片库</a>
+        </div>
+    </div>
+    <div class="hero-card mt-4 mt-md-0">
+        <div class="glass p-3 rounded-4">
+            <p class="text-muted small mb-2">今日精选</p>
+            {% with top_rated|first as hero_movie %}
+                {% if hero_movie %}
+        <div class="d-flex align-items-center">
+            {% with hero_movie.poster|default:hero_movie.cover_url as cover %}
+            <div class="ratio ratio-2x3 me-3 hero-poster" style="width:110px;">
+                {% if cover %}
+                    <img src="{{ cover }}" alt="{{ hero_movie.title }}" class="rounded-3 object-fit-cover w-100 h-100">
+                {% else %}
+                    <div class="placeholder rounded-3 w-100 h-100"></div>
+                {% endif %}
+            </div>
+            {% endwith %}
+            <div>
+                <h5 class="mb-1">{{ hero_movie.title }}</h5>
+                <p class="text-muted small mb-1">{{ hero_movie.region }} · {{ hero_movie.type }}</p>
+                <span class="badge bg-dark rounded-pill">评分 {{ hero_movie.score|default:"-" }}</span>
+            </div>
+        </div>
+                {% else %}
+                    <div class="placeholder-glass rounded-3 p-4 text-muted">暂无数据</div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">高分榜</h5>
+        <a class="text-decoration-none" href="{% url 'top' %}">查看全部</a>
+    </div>
+    <div class="row g-3">
+        {% for m in top_rated %}
+        <div class="col-6 col-md-3">
+            <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+                {% with m.poster|default:m.cover_url as cover %}
+                {% if cover %}
+                <div class="ratio ratio-2x3">
+                    <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                </div>
+                {% endif %}
+                {% endwith %}
+                <div class="card-body">
+                    <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                    <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
+                    <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <p class="text-muted">暂无数据</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">最新上映</h5>
+        <a class="text-decoration-none" href="{% url 'movie_list' %}?sort=-date">查看全部</a>
+    </div>
+    <div class="row g-3">
+        {% for m in latest %}
+        <div class="col-6 col-md-3">
+            <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+                {% with m.poster|default:m.cover_url as cover %}
+                {% if cover %}
+                <div class="ratio ratio-2x3">
+                    <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                </div>
+                {% endif %}
+                {% endwith %}
+                <div class="card-body">
+                    <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                    <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
+                    <span class="badge bg-secondary rounded-pill">上映 {{ m.date|default:"未知" }}</span>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <p class="text-muted">暂无数据</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">为你推荐</h5>
+        <a class="text-decoration-none" href="{% url 'recommend' %}">更多推荐</a>
+    </div>
+    <div class="row g-3">
+        {% for m in recommend %}
+        <div class="col-6 col-md-2">
+            <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+                {% with m.poster|default:m.cover_url as cover %}
+                {% if cover %}
+                <div class="ratio ratio-2x3">
+                    <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                </div>
+                {% endif %}
+                {% endwith %}
+                <div class="card-body">
+                    <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                    <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <p class="text-muted">暂无数据</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

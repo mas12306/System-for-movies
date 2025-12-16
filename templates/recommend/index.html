@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}推荐 - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">推荐</h4>
+        {% if personalized %}
+        <p class="text-muted mb-0">基于你的收藏/评分生成的个性化推荐。</p>
+        {% else %}
+        <p class="text-muted mb-0">当前为高分推荐，登录并收藏/评分后可个性化。</p>
+        {% endif %}
+    </div>
+    <a class="btn btn-outline-dark" href="{% url 'movie_list' %}">去影片库</a>
+</div>
+
+<div class="row g-3">
+    {% for m in recs %}
+    <div class="col-6 col-md-3">
+        <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
+            {% with m.poster|default:m.cover_url as cover %}
+            {% if cover %}
+            <div class="ratio ratio-2x3">
+                <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+            </div>
+            {% endif %}
+            {% endwith %}
+            <div class="card-body">
+                <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
+                <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
+                <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <p class="text-muted">暂无推荐数据</p>
+    {% endfor %}
+</div>
+{% endblock %}
+

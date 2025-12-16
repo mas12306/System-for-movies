@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}登录 - 电影推荐系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-3 text-center">登录</h4>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        {{ form.username }}
+                        {{ form.username.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">密码</label>
+                        {{ form.password }}
+                        {{ form.password.errors }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">登录</button>
+                </form>
+                <p class="mt-3 text-center">还没有账号？<a href="{% url 'register' %}">去注册</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
