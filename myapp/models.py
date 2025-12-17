@@ -57,6 +57,7 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, username, email, password, **kwargs):
         kwargs['is_superuser'] = True
+        kwargs['is_staff'] = True  # 超级用户必须有staff权限才能访问admin
         return self._create_user(username, email, password, **kwargs)
 
 class UserInfo(AbstractUser,PermissionsMixin):

@@ -1,0 +1,379 @@
+/* Django Admin 自定义样式 - 与系统风格一致 */
+
+/* 引入Bootstrap和系统主样式 */
+@import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
+
+/* 全局样式覆盖 */
+body {
+    background-color: #f2f2f7 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* 顶部导航栏样式 */
+#header {
+    background: rgba(24, 24, 28, 0.85) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#header #site-name a {
+    color: #fff !important;
+    font-weight: 600;
+    font-size: 1.25rem;
+    text-decoration: none;
+}
+
+#header #site-name a:hover {
+    opacity: 0.8;
+}
+
+/* 用户工具样式 */
+#user-tools {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+#user-tools a {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-decoration: none;
+    margin-left: 12px;
+}
+
+#user-tools a:hover {
+    color: #fff !important;
+}
+
+/* 主要内容区域 */
+#content {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 模块样式 */
+.module {
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.module h2 {
+    background: transparent !important;
+    color: #111827;
+    font-weight: 600;
+    font-size: 1.25rem;
+    padding: 0 0 12px 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.module table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.module table th {
+    background: rgba(0, 0, 0, 0.02);
+    color: #374151;
+    font-weight: 600;
+    padding: 12px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.module table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.module table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+/* 链接样式 */
+.module a,
+.module a:link,
+.module a:visited {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.module a:hover {
+    color: #5568d3;
+    text-decoration: underline;
+}
+
+/* 按钮样式 */
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+    background: #667eea !important;
+    border: none !important;
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: #fff !important;
+    font-weight: 500;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+a.button:hover {
+    background: #5568d3 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.button.default,
+input[type="submit"].default,
+.submit-row input.default {
+    background: #667eea !important;
+}
+
+/* 表单样式 */
+.form-row {
+    margin-bottom: 20px;
+}
+
+.form-row label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-row input[type="text"],
+.form-row input[type="email"],
+.form-row input[type="password"],
+.form-row input[type="number"],
+.form-row input[type="date"],
+.form-row textarea,
+.form-row select {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.9);
+    width: 100%;
+    max-width: 100%;
+}
+
+.form-row input:focus,
+.form-row textarea:focus,
+.form-row select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* 表格样式 */
+#result_list {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+#result_list thead th {
+    background: rgba(0, 0, 0, 0.02);
+    color: #374151;
+    font-weight: 600;
+    padding: 12px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+#result_list tbody td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+#result_list tbody tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+/* 分页样式 */
+.paginator {
+    margin-top: 20px;
+}
+
+.paginator a,
+.paginator span {
+    padding: 8px 12px;
+    margin: 0 4px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #667eea;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.paginator a:hover {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: #667eea;
+}
+
+.paginator .this-page {
+    background: #667eea;
+    color: #fff;
+    border-color: #667eea;
+}
+
+/* 消息提示 */
+.messagelist {
+    margin-bottom: 20px;
+}
+
+.messagelist li {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.messagelist .success {
+    background: rgba(34, 197, 94, 0.1);
+    border-left: 4px solid #22c55e;
+    color: #15803d;
+}
+
+.messagelist .error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid #ef4444;
+    color: #dc2626;
+}
+
+.messagelist .warning {
+    background: rgba(251, 191, 36, 0.1);
+    border-left: 4px solid #fbbf24;
+    color: #d97706;
+}
+
+.messagelist .info {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid #3b82f6;
+    color: #2563eb;
+}
+
+/* 面包屑导航 */
+.breadcrumbs {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.breadcrumbs a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    color: #5568d3;
+    text-decoration: underline;
+}
+
+/* 对象工具 */
+.object-tools {
+    margin-bottom: 20px;
+}
+
+.object-tools li {
+    list-style: none;
+    margin-bottom: 8px;
+}
+
+.object-tools a {
+    background: #667eea;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-block;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.object-tools a:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 筛选器样式 */
+#changelist-filter {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+#changelist-filter h2 {
+    background: transparent;
+    color: #111827;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0 0 12px 0;
+    margin-bottom: 12px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+#changelist-filter h3 {
+    background: transparent;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+#changelist-filter a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+#changelist-filter a:hover {
+    color: #5568d3;
+    text-decoration: underline;
+}
+
+/* 搜索框样式 */
+#changelist-search {
+    margin-bottom: 20px;
+}
+
+#changelist-search input[type="text"] {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+#changelist-search input[type="text"]:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    #content {
+        padding: 12px;
+    }
+    
+    .module {
+        padding: 16px;
+    }
+}
+

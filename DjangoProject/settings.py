@@ -139,3 +139,9 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==================== AI推荐配置 ====================
+# 通义千问API配置
+# 获取API Key: https://dashscope.console.aliyun.com/
+QWEN_API_KEY = ''  # 请在此处填入你的通义千问API Key
+QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'

@@ -22,6 +22,9 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'top' %}">排行榜</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'movie_list' %}">影片库</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'recommend' %}">推荐</a></li>
+                    {% if user.is_authenticated and user.is_superuser %}
+                    <li class="nav-item"><a class="nav-link" href="/admin/">后台管理</a></li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav mb-2 mb-lg-0">
                     {% if user.is_authenticated %}

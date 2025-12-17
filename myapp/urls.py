@@ -32,6 +32,7 @@ urlpatterns = [
     path('movies/<int:pk>/comment/', views.submit_comment, name='submit_comment'),
     path('recommend/', views.recommend_view, name='recommend'),
     path('api/recommend/', views.recommend_api, name='recommend_api'),
+    path('api/ai-recommend/', views.ai_recommend_api, name='ai_recommend_api'),
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
     path('profile/password/', views.profile_password, name='profile_password'),

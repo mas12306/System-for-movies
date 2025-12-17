@@ -1,6 +1,8 @@
 from collections import Counter
 from urllib.parse import urlencode
 import json
+import requests
+import re
 
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
@@ -9,6 +11,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Avg
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
 
 from .forms import (
     LoginForm,
@@ -71,13 +74,16 @@ def _hot_recommendations(limit=24):
 
 
 def home(request):
+    # 轮播图：选择评分最高的5部电影
+    carousel_movies = Movie.objects.filter(score__isnull=False).order_by("-score")[:5]
     top_rated = Movie.objects.order_by("-score")[:8]
     latest = Movie.objects.order_by("-date")[:8]
-    recommend = top_rated if request.user.is_anonymous else Movie.objects.order_by("-score")[:6]
+    recommend = _personalized_recommendations(request.user, limit=6) if request.user.is_authenticated else _hot_recommendations(limit=6)
     return render(
         request,
         "home/index.html",
         {
+            "carousel_movies": carousel_movies,
             "top_rated": top_rated,
             "latest": latest,
             "recommend": recommend,
@@ -209,10 +215,10 @@ def recommend_view(request):
     personalized = False
     recs = None
     if request.user.is_authenticated:
-        recs = _personalized_recommendations(request.user, limit=18)
+        recs = _personalized_recommendations(request.user, limit=8)
         personalized = recs is not None and len(recs) > 0
     if not recs:
-        recs = _hot_recommendations(limit=18)
+        recs = _hot_recommendations(limit=8)
     return render(
         request,
         "recommend/index.html",
@@ -475,3 +481,264 @@ def recommend_api(request):
         for m in recs
     ]
     return JsonResponse({"personalized": personalized, "items": data})
+
+
+# ==================== AI推荐相关函数 ====================
+
+def _format_movie_info(movie, user_rating=None):
+    """格式化电影信息用于AI分析"""
+    return {
+        "title": movie.title,
+        "type": movie.type or "未知",
+        "region": movie.region or "未知",
+        "actors": movie.actors or "未知",
+        "score": movie.score,
+        "rating": user_rating,  # 用户评分
+    }
+
+
+def _get_user_preference_data(user, limit=10):
+    """获取用户偏好数据用于AI分析"""
+    # 收藏的10部电影
+    favorites = (
+        UserAction.objects.filter(user=user, is_favorite=True)
+        .select_related("movie")
+        .order_by("-updated_at")[:limit]
+    )
+    
+    # 评分最高的10部电影（按用户评分排序）
+    top_rated = (
+        UserAction.objects.filter(user=user, rating__isnull=False)
+        .select_related("movie")
+        .order_by("-rating", "-updated_at")[:limit]
+    )
+    
+    return {
+        "favorites": [_format_movie_info(action.movie, action.rating) for action in favorites],
+        "top_rated": [_format_movie_info(action.movie, action.rating) for action in top_rated],
+    }
+
+
+def _build_recommendation_prompt(user_data):
+    """构建推荐请求的prompt"""
+    favorites_text = ""
+    if user_data['favorites']:
+        favorites_text = "用户收藏的电影：\n" + "\n".join([
+            f"- {m['title']}（类型：{m['type']}，地区：{m['region']}，豆瓣评分：{m['score']}）"
+            for m in user_data['favorites']
+        ])
+    
+    top_rated_text = ""
+    if user_data['top_rated']:
+        top_rated_text = "用户评分最高的电影：\n" + "\n".join([
+            f"- {m['title']}（类型：{m['type']}，地区：{m['region']}，用户评分：{m['rating']}分，豆瓣评分：{m['score']}）"
+            for m in user_data['top_rated']
+        ])
+    
+    prompt = f"""你是一位专业的电影推荐专家。基于用户的观影偏好，请推荐5-8部电影。
+
+{favorites_text}
+
+{top_rated_text}
+
+请分析用户的观影偏好（类型、地区、风格等），然后：
+1. 推荐5-8部符合用户口味的电影
+2. 为每部推荐电影提供简短的推荐理由（20-30字）
+3. 推荐理由要说明为什么这部电影适合这个用户
+
+请以JSON格式返回，格式如下：
+{{
+    "analysis": "对用户观影偏好的简短分析（50字以内）",
+    "recommendations": [
+        {{
+            "title": "电影标题（必须是准确的电影名称）",
+            "reason": "推荐理由（20-30字）"
+        }}
+    ]
+}}
+
+注意：
+1. 只返回JSON，不要其他文字
+2. 电影标题必须准确，以便在数据库中查找
+3. 推荐理由要具体说明为什么适合这个用户"""
+    
+    return prompt
+
+
+def _call_qwen_api(prompt):
+    """调用通义千问API"""
+    api_key = getattr(settings, 'QWEN_API_KEY', '')
+    api_url = getattr(settings, 'QWEN_API_URL', 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation')
+    
+    if not api_key:
+        return None, "API Key未配置"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "model": "qwen-turbo",  # 或 "qwen-plus", "qwen-max"
+        "input": {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "你是一位专业的电影推荐专家，擅长分析用户观影偏好并推荐合适的电影。"
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        },
+        "parameters": {
+            "temperature": 0.7,
+            "max_tokens": 2000
+        }
+    }
+    
+    try:
+        response = requests.post(api_url, headers=headers, json=data, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        
+        # 解析通义千问的响应格式
+        if 'output' in result and 'choices' in result['output']:
+            content = result['output']['choices'][0]['message']['content']
+            return content, None
+        else:
+            return None, f"API响应格式错误: {result}"
+    except requests.exceptions.RequestException as e:
+        return None, f"API请求失败: {str(e)}"
+    except Exception as e:
+        return None, f"API调用异常: {str(e)}"
+
+
+def _extract_json_from_response(text):
+    """从AI响应中提取JSON"""
+    # 尝试直接解析
+    try:
+        return json.loads(text)
+    except:
+        pass
+    
+    # 尝试提取JSON块
+    json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', text, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group())
+        except:
+            pass
+    
+    # 尝试提取```json代码块
+    json_block_match = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if json_block_match:
+        try:
+            return json.loads(json_block_match.group(1))
+        except:
+            pass
+    
+    # 尝试提取```代码块
+    code_block_match = re.search(r'```\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if code_block_match:
+        try:
+            return json.loads(code_block_match.group(1))
+        except:
+            pass
+    
+    return None
+
+
+@login_required
+def ai_recommend_api(request):
+    """AI推荐API"""
+    if request.method != "POST":
+        return JsonResponse({"error": "method not allowed"}, status=405)
+    
+    user = request.user
+    
+    # 获取用户偏好数据
+    user_data = _get_user_preference_data(user)
+    
+    # 检查是否有足够的数据
+    if not user_data['favorites'] and not user_data['top_rated']:
+        return JsonResponse({
+            "success": False,
+            "error": "数据不足",
+            "message": "请先收藏或评分一些电影，以便AI分析你的观影偏好"
+        }, status=400)
+    
+    # 构建prompt
+    prompt = _build_recommendation_prompt(user_data)
+    
+    # 调用AI API
+    ai_response, error_msg = _call_qwen_api(prompt)
+    
+    if not ai_response:
+        return JsonResponse({
+            "success": False,
+            "error": "API调用失败",
+            "message": error_msg or "请稍后重试"
+        }, status=500)
+    
+    # 解析AI返回的JSON
+    try:
+        ai_data = _extract_json_from_response(ai_response)
+        
+        if not ai_data:
+            return JsonResponse({
+                "success": False,
+                "error": "解析失败",
+                "message": "AI返回格式不正确，请重试"
+            }, status=500)
+        
+        # 根据电影标题查找数据库中的电影
+        recommendations = []
+        for rec in ai_data.get('recommendations', []):
+            title = rec.get('title', '').strip()
+            if not title:
+                continue
+            
+            # 尝试精确匹配
+            movie = Movie.objects.filter(title=title).first()
+            
+            # 如果精确匹配失败，尝试模糊匹配
+            if not movie:
+                movie = Movie.objects.filter(title__icontains=title).first()
+            
+            if movie:
+                recommendations.append({
+                    "id": movie.id,
+                    "title": movie.title,
+                    "poster": movie.poster or "",
+                    "score": movie.score,
+                    "type": movie.type or "",
+                    "region": movie.region or "",
+                    "reason": rec.get('reason', '推荐给你')
+                })
+        
+        if not recommendations:
+            return JsonResponse({
+                "success": False,
+                "error": "未找到匹配电影",
+                "message": "AI推荐的电影在数据库中未找到，请重试"
+            }, status=404)
+        
+        return JsonResponse({
+            "success": True,
+            "analysis": ai_data.get('analysis', '基于你的观影偏好，为你推荐以下电影'),
+            "recommendations": recommendations
+        })
+    except json.JSONDecodeError as e:
+        return JsonResponse({
+            "success": False,
+            "error": "JSON解析失败",
+            "message": f"解析错误: {str(e)}"
+        }, status=500)
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": "处理失败",
+            "message": str(e)
+        }, status=500)

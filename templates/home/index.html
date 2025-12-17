@@ -2,6 +2,76 @@
 {% block title %}首页 - 电影推荐系统{% endblock %}
 
 {% block content %}
+<!-- 轮播图 -->
+{% if carousel_movies %}
+<div class="carousel-container mb-5">
+    <div id="movieCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
+        <div class="carousel-indicators">
+            {% for movie in carousel_movies %}
+            <button type="button" data-bs-target="#movieCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ forloop.counter }}"></button>
+            {% endfor %}
+        </div>
+        <div class="carousel-inner rounded-4 overflow-hidden">
+            {% for movie in carousel_movies %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                <div class="carousel-background" style="background-image: url('{{ movie.poster|default:'' }}');">
+                    <div class="carousel-overlay"></div>
+                </div>
+                <div class="carousel-content">
+                    <div class="container">
+                        <div class="row align-items-center">
+                            <div class="col-lg-4 col-md-5">
+                                <div class="carousel-poster-wrapper">
+                                    <div class="ratio ratio-2x3 carousel-poster">
+                                        <img src="{{ movie.poster|default:'' }}" alt="{{ movie.title }}" class="rounded-4 object-fit-cover w-100 h-100 shadow-lg" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-4 w-100 h-100\'></div>';">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-8 col-md-7">
+                                <div class="carousel-text">
+                                    <h1 class="carousel-title mb-3">{{ movie.title }}</h1>
+                                    <div class="carousel-meta mb-3">
+                                        <span class="badge bg-light text-dark me-2">{{ movie.region|default:"未知地区" }}</span>
+                                        <span class="badge bg-light text-dark me-2">{{ movie.type|default:"未知类型" }}</span>
+                                        {% if movie.score %}
+                                        <span class="badge bg-warning text-dark">
+                                            ⭐ {{ movie.score }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% if movie.summary %}
+                                    <p class="carousel-summary">{{ movie.summary|truncatewords:30 }}</p>
+                                    {% endif %}
+                                    <div class="carousel-actions mt-4">
+                                        <a href="{% url 'movie_detail' movie.pk %}" class="btn btn-light btn-lg me-2">
+                                            ▶ 查看详情
+                                        </a>
+                                        {% if user.is_authenticated %}
+                                        <a href="{% url 'movie_detail' movie.pk %}#comment" class="btn btn-outline-light btn-lg">
+                                            💬 立即评论
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#movieCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#movieCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+</div>
+{% endif %}
+
 <div class="hero d-flex flex-column flex-md-row align-items-center justify-content-between mb-4">
     <div class="hero-text">
         <p class="text-muted mb-2">电影推荐 · 精选</p>
