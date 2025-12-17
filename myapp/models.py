@@ -9,7 +9,6 @@ class Movie(models.Model):
     score = models.FloatField(null = True, blank = True, verbose_name='评分')
     date = models.DateField(null = True, blank = True,verbose_name='发布日期')
     poster = models.URLField(max_length=255, null = True, blank = True,verbose_name='海报链接')
-    cover_url = models.URLField(max_length=255, null=True, blank=True, verbose_name='封面链接')
     actors = models.CharField(max_length=255, null = True, blank = True,verbose_name='演员表')
     region = models.CharField(max_length=255, null = True, blank = True,verbose_name='地区')
     type = models.CharField(max_length=255, null = True, blank = True,verbose_name='类型')
@@ -24,10 +23,11 @@ class Movie(models.Model):
 
 
 class UserAction(models.Model):
-    """用户行为：评分与收藏"""
+    """用户行为：评分、收藏与评论"""
     user = models.ForeignKey("UserInfo", on_delete=models.CASCADE, related_name="actions")
     movie = models.ForeignKey("Movie", on_delete=models.CASCADE, related_name="actions")
     rating = models.FloatField(null=True, blank=True, verbose_name="评分")
+    comment = models.TextField(null=True, blank=True, verbose_name="评论")
     is_favorite = models.BooleanField(default=False, verbose_name="收藏")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -29,9 +29,11 @@ urlpatterns = [
     path('movies/<int:pk>/rate/', views.rate_movie, name='rate_movie'),
     path('movies/<int:pk>/favorite/ajax/', views.toggle_favorite_api, name='toggle_favorite_api'),
     path('movies/<int:pk>/rate/ajax/', views.rate_movie_api, name='rate_movie_api'),
+    path('movies/<int:pk>/comment/', views.submit_comment, name='submit_comment'),
     path('recommend/', views.recommend_view, name='recommend'),
     path('api/recommend/', views.recommend_api, name='recommend_api'),
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
     path('profile/password/', views.profile_password, name='profile_password'),
+    path('profile/stats/', views.user_stats, name='user_stats'),
 ]

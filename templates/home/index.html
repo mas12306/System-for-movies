@@ -18,15 +18,9 @@
             {% with top_rated|first as hero_movie %}
                 {% if hero_movie %}
         <div class="d-flex align-items-center">
-            {% with hero_movie.poster|default:hero_movie.cover_url as cover %}
             <div class="ratio ratio-2x3 me-3 hero-poster" style="width:110px;">
-                {% if cover %}
-                    <img src="{{ cover }}" alt="{{ hero_movie.title }}" class="rounded-3 object-fit-cover w-100 h-100">
-                {% else %}
-                    <div class="placeholder rounded-3 w-100 h-100"></div>
-                {% endif %}
+                <img src="{{ hero_movie.poster|default:'' }}" alt="{{ hero_movie.title }}" class="rounded-3 object-fit-cover w-100 h-100" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
             </div>
-            {% endwith %}
             <div>
                 <h5 class="mb-1">{{ hero_movie.title }}</h5>
                 <p class="text-muted small mb-1">{{ hero_movie.region }} · {{ hero_movie.type }}</p>
@@ -50,13 +44,9 @@
         {% for m in top_rated %}
         <div class="col-6 col-md-3">
             <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
-                {% with m.poster|default:m.cover_url as cover %}
-                {% if cover %}
                 <div class="ratio ratio-2x3">
-                    <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                    <img src="{{ m.poster|default:'' }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
                 </div>
-                {% endif %}
-                {% endwith %}
                 <div class="card-body">
                     <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
                     <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
@@ -79,13 +69,9 @@
         {% for m in latest %}
         <div class="col-6 col-md-3">
             <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
-                {% with m.poster|default:m.cover_url as cover %}
-                {% if cover %}
                 <div class="ratio ratio-2x3">
-                    <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                    <img src="{{ m.poster|default:'' }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
                 </div>
-                {% endif %}
-                {% endwith %}
                 <div class="card-body">
                     <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
                     <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>
@@ -108,13 +94,9 @@
         {% for m in recommend %}
         <div class="col-6 col-md-2">
             <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
-                {% with m.poster|default:m.cover_url as cover %}
-                {% if cover %}
                 <div class="ratio ratio-2x3">
-                    <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                    <img src="{{ m.poster|default:'' }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
                 </div>
-                {% endif %}
-                {% endwith %}
                 <div class="card-body">
                     <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
                     <span class="badge bg-dark rounded-pill">评分 {{ m.score|default:"-" }}</span>

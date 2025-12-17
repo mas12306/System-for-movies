@@ -49,19 +49,18 @@
         <div class="glass p-4 rounded-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">我的收藏</h5>
-                <span class="text-muted small">点击可查看影片详情</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">点击可查看影片详情</span>
+                    <a href="{% url 'user_stats' %}" class="btn btn-sm btn-outline-dark">更多</a>
+                </div>
             </div>
             <div class="row g-3">
                 {% for a in favorites %}
                 <div class="col-6 col-md-3">
                     <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' a.movie.pk %}">
-                        {% with a.movie.poster|default:a.movie.cover_url as cover %}
-                        {% if cover %}
                         <div class="ratio ratio-2x3">
-                            <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ a.movie.title }}">
+                            <img src="{{ a.movie.poster|default:'' }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ a.movie.title }}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
                         </div>
-                        {% endif %}
-                        {% endwith %}
                         <div class="card-body">
                             <h6 class="card-title text-truncate mb-1">{{ a.movie.title }}</h6>
                             <p class="text-muted small mb-1 text-truncate">{{ a.movie.region }} · {{ a.movie.type }}</p>
@@ -78,19 +77,18 @@
         <div class="glass p-4 rounded-4 mt-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">我的评分</h5>
-                <span class="text-muted small">展示你已打分的影片</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">展示你已打分的影片</span>
+                    <a href="{% url 'user_stats' %}" class="btn btn-sm btn-outline-dark">更多</a>
+                </div>
             </div>
             <div class="row g-3">
                 {% for a in rated %}
                 <div class="col-6 col-md-3">
                     <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' a.movie.pk %}">
-                        {% with a.movie.poster|default:a.movie.cover_url as cover %}
-                        {% if cover %}
                         <div class="ratio ratio-2x3">
-                            <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ a.movie.title }}">
+                            <img src="{{ a.movie.poster|default:'' }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ a.movie.title }}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
                         </div>
-                        {% endif %}
-                        {% endwith %}
                         <div class="card-body">
                             <h6 class="card-title text-truncate mb-1">{{ a.movie.title }}</h6>
                             <p class="text-muted small mb-1 text-truncate">{{ a.movie.region }} · {{ a.movie.type }}</p>

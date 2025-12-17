@@ -41,13 +41,9 @@
     {% for m in page_obj %}
     <div class="col-6 col-md-3">
         <a class="card card-movie glass h-100 text-decoration-none text-dark" href="{% url 'movie_detail' m.pk %}">
-            {% with m.poster|default:m.cover_url as cover %}
-            {% if cover %}
             <div class="ratio ratio-2x3">
-                <img src="{{ cover }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}">
+                <img src="{{ m.poster|default:'' }}" class="card-img-top rounded-top-3 object-fit-cover" alt="{{ m.title }}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'placeholder rounded-3 w-100 h-100\'></div>';">
             </div>
-            {% endif %}
-            {% endwith %}
             <div class="card-body">
                 <h6 class="card-title text-truncate mb-1">{{ m.title }}</h6>
                 <p class="text-muted small mb-1 text-truncate">{{ m.region }} · {{ m.type }}</p>

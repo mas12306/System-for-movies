@@ -1,11 +1,12 @@
 from collections import Counter
 from urllib.parse import urlencode
+import json
 
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Avg
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -185,6 +186,13 @@ def movie_detail(request, pk):
     action = None
     if request.user.is_authenticated:
         action = UserAction.objects.filter(user=request.user, movie=movie).first()
+    # 获取所有评论（有评分或评论的）
+    from django.db.models import Q
+    comments = UserAction.objects.filter(
+        movie=movie
+    ).filter(
+        Q(rating__isnull=False) | Q(comment__isnull=False, comment__gt="")
+    ).select_related("user").order_by("-updated_at")
     return render(
         request,
         "movies/detail.html",
@@ -192,6 +200,7 @@ def movie_detail(request, pk):
             "movie": movie,
             "related": related,
             "action": action,
+            "comments": comments,
         },
     )
 
@@ -235,6 +244,103 @@ def profile(request):
             "user_obj": request.user,
             "favorites": favorites,
             "rated": rated,
+        },
+    )
+
+
+@login_required
+def user_stats(request):
+    """用户统计数据页面"""
+    user = request.user
+    
+    # 收藏统计
+    favorites = UserAction.objects.filter(user=user, is_favorite=True).select_related("movie")
+    favorite_count = favorites.count()
+    
+    # 评分统计
+    rated = UserAction.objects.filter(user=user, rating__isnull=False).select_related("movie")
+    rated_count = rated.count()
+    avg_rating = rated.aggregate(avg=Avg("rating"))["avg"] or 0
+    
+    # 评分分布（0-2, 2-4, 4-6, 6-8, 8-10）
+    rating_dist = {"range_0_2": 0, "range_2_4": 0, "range_4_6": 0, "range_6_8": 0, "range_8_10": 0}
+    for action in rated:
+        r = action.rating
+        if r < 2:
+            rating_dist["range_0_2"] += 1
+        elif r < 4:
+            rating_dist["range_2_4"] += 1
+        elif r < 6:
+            rating_dist["range_4_6"] += 1
+        elif r < 8:
+            rating_dist["range_6_8"] += 1
+        else:
+            rating_dist["range_8_10"] += 1
+    
+    # 收藏影片的类型统计
+    favorite_types = Counter()
+    for action in favorites:
+        if action.movie.type:
+            types = _split_tokens(action.movie.type)
+            favorite_types.update(types)
+    top_types = dict(favorite_types.most_common(10))
+    
+    # 收藏影片的地区统计
+    favorite_regions = Counter()
+    for action in favorites:
+        if action.movie.region:
+            regions = _split_tokens(action.movie.region)
+            favorite_regions.update(regions)
+    top_regions = dict(favorite_regions.most_common(10))
+    
+    # 评分影片的类型统计
+    rated_types = Counter()
+    for action in rated:
+        if action.movie.type:
+            types = _split_tokens(action.movie.type)
+            rated_types.update(types)
+    top_rated_types = dict(rated_types.most_common(10))
+    
+    # 评分影片的地区统计
+    rated_regions = Counter()
+    for action in rated:
+        if action.movie.region:
+            regions = _split_tokens(action.movie.region)
+            rated_regions.update(regions)
+    top_rated_regions = dict(rated_regions.most_common(10))
+    
+    # 月度收藏趋势（简化：按创建时间）
+    from django.utils import timezone
+    from datetime import timedelta
+    monthly_favorites = {}
+    for action in favorites:
+        month_key = action.created_at.strftime("%Y-%m")
+        monthly_favorites[month_key] = monthly_favorites.get(month_key, 0) + 1
+    
+    # 月度评分趋势
+    monthly_ratings = {}
+    for action in rated:
+        month_key = action.created_at.strftime("%Y-%m")
+        if month_key not in monthly_ratings:
+            monthly_ratings[month_key] = []
+        monthly_ratings[month_key].append(action.rating)
+    monthly_avg_ratings = {k: sum(v) / len(v) for k, v in monthly_ratings.items()}
+    
+    return render(
+        request,
+        "account/stats.html",
+        {
+            "user_obj": user,
+            "favorite_count": favorite_count,
+            "rated_count": rated_count,
+            "avg_rating": round(avg_rating, 2),
+            "rating_dist": rating_dist,
+            "top_types": json.dumps(top_types, ensure_ascii=False),
+            "top_regions": json.dumps(top_regions, ensure_ascii=False),
+            "top_rated_types": json.dumps(top_rated_types, ensure_ascii=False),
+            "top_rated_regions": json.dumps(top_rated_regions, ensure_ascii=False),
+            "monthly_favorites": json.dumps(monthly_favorites, ensure_ascii=False),
+            "monthly_avg_ratings": json.dumps({k: round(v, 2) for k, v in monthly_avg_ratings.items()}, ensure_ascii=False),
         },
     )
 
@@ -312,6 +418,40 @@ def rate_movie_api(request, pk):
     action.rating = rating
     action.save()
     return JsonResponse({"rating": action.rating})
+
+
+@login_required
+def submit_comment(request, pk):
+    """提交评论（可同时评分和评论）"""
+    if request.method != "POST":
+        return JsonResponse({"error": "method not allowed"}, status=405)
+    movie = get_object_or_404(Movie, pk=pk)
+    action, _ = UserAction.objects.get_or_create(user=request.user, movie=movie)
+    
+    # 处理评分
+    rating = request.POST.get("rating")
+    if rating:
+        try:
+            rating = float(rating)
+            rating = max(0, min(10, rating))
+            action.rating = rating
+        except (TypeError, ValueError):
+            pass
+    
+    # 处理评论
+    comment = request.POST.get("comment", "").strip()
+    if comment:
+        action.comment = comment
+    
+    action.save()
+    
+    return JsonResponse({
+        "success": True,
+        "rating": action.rating,
+        "comment": action.comment,
+        "user": request.user.nickname or request.user.username,
+        "updated_at": action.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    })
 
 
 def recommend_api(request):

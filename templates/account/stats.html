@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block title %}数据统计 - 电影推荐系统{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .stat-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 20px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-1">数据统计</h3>
+            <p class="text-muted mb-0">{{ user_obj.nickname }} 的观影数据分析</p>
+        </div>
+        <a href="{% url 'profile' %}" class="btn btn-outline-dark">返回个人中心</a>
+    </div>
+
+    <!-- 概览卡片 -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card glass">
+                <div class="text-muted small mb-2">总收藏数</div>
+                <div class="stat-number">{{ favorite_count }}</div>
+                <div class="text-muted small mt-2">部影片</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card glass">
+                <div class="text-muted small mb-2">总评分数</div>
+                <div class="stat-number">{{ rated_count }}</div>
+                <div class="text-muted small mt-2">部影片</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card glass">
+                <div class="text-muted small mb-2">平均评分</div>
+                <div class="stat-number">{{ avg_rating }}</div>
+                <div class="text-muted small mt-2">分（满分10分）</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- 评分分布 - 扇形图 -->
+        <div class="col-lg-6">
+            <div class="glass p-4 rounded-4">
+                <h5 class="section-title">评分分布</h5>
+                <div class="chart-container">
+                    <canvas id="ratingPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收藏类型统计 - 柱形图 -->
+        <div class="col-lg-6">
+            <div class="glass p-4 rounded-4">
+                <h5 class="section-title">收藏类型偏好</h5>
+                <div class="chart-container">
+                    <canvas id="favoriteTypesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 评分类型统计 - 柱形图 -->
+        <div class="col-lg-6">
+            <div class="glass p-4 rounded-4">
+                <h5 class="section-title">评分类型分布</h5>
+                <div class="chart-container">
+                    <canvas id="ratedTypesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收藏地区统计 - 柱形图 -->
+        <div class="col-lg-6">
+            <div class="glass p-4 rounded-4">
+                <h5 class="section-title">收藏地区偏好</h5>
+                <div class="chart-container">
+                    <canvas id="favoriteRegionsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 月度收藏趋势 - 折线图 -->
+        <div class="col-lg-6">
+            <div class="glass p-4 rounded-4">
+                <h5 class="section-title">月度收藏趋势</h5>
+                <div class="chart-container">
+                    <canvas id="monthlyFavoritesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 月度平均评分趋势 - 折线图 -->
+        <div class="col-lg-6">
+            <div class="glass p-4 rounded-4">
+                <h5 class="section-title">月度平均评分趋势</h5>
+                <div class="chart-container">
+                    <canvas id="monthlyRatingsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 颜色配置
+    const colors = {
+        primary: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe'],
+        secondary: ['#fa709a', '#fee140', '#30cfd0', '#330867', '#ff6b6b'],
+        gradient: ['rgba(102, 126, 234, 0.8)', 'rgba(118, 75, 162, 0.8)', 'rgba(250, 112, 154, 0.8)', 'rgba(255, 225, 64, 0.8)', 'rgba(48, 207, 208, 0.8)']
+    };
+
+    // 评分分布 - 扇形图
+    const ratingPieCtx = document.getElementById('ratingPieChart').getContext('2d');
+    new Chart(ratingPieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['0-2分', '2-4分', '4-6分', '6-8分', '8-10分'],
+            datasets: [{
+                data: [
+                    {{ rating_dist.range_0_2 }},
+                    {{ rating_dist.range_2_4 }},
+                    {{ rating_dist.range_4_6 }},
+                    {{ rating_dist.range_6_8 }},
+                    {{ rating_dist.range_8_10 }}
+                ],
+                backgroundColor: colors.gradient,
+                borderWidth: 2,
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#fff', padding: 15 }
+                }
+            }
+        }
+    });
+
+    // 收藏类型统计 - 柱形图
+    const favoriteTypesCtx = document.getElementById('favoriteTypesChart').getContext('2d');
+    const favoriteTypesData = JSON.parse('{{ top_types|escapejs }}');
+    new Chart(favoriteTypesCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(favoriteTypesData),
+            datasets: [{
+                label: '收藏数量',
+                data: Object.values(favoriteTypesData),
+                backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#fff', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#fff' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // 评分类型统计 - 柱形图
+    const ratedTypesCtx = document.getElementById('ratedTypesChart').getContext('2d');
+    const ratedTypesData = JSON.parse('{{ top_rated_types|escapejs }}');
+    new Chart(ratedTypesCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(ratedTypesData),
+            datasets: [{
+                label: '评分数量',
+                data: Object.values(ratedTypesData),
+                backgroundColor: 'rgba(250, 112, 154, 0.8)',
+                borderColor: 'rgba(250, 112, 154, 1)',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#fff', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#fff' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // 收藏地区统计 - 柱形图
+    const favoriteRegionsCtx = document.getElementById('favoriteRegionsChart').getContext('2d');
+    const favoriteRegionsData = JSON.parse('{{ top_regions|escapejs }}');
+    new Chart(favoriteRegionsCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(favoriteRegionsData),
+            datasets: [{
+                label: '收藏数量',
+                data: Object.values(favoriteRegionsData),
+                backgroundColor: 'rgba(48, 207, 208, 0.8)',
+                borderColor: 'rgba(48, 207, 208, 1)',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#fff', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#fff' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // 月度收藏趋势 - 折线图
+    const monthlyFavoritesCtx = document.getElementById('monthlyFavoritesChart').getContext('2d');
+    const monthlyFavoritesData = JSON.parse('{{ monthly_favorites|escapejs }}');
+    const sortedMonths = Object.keys(monthlyFavoritesData).sort();
+    new Chart(monthlyFavoritesCtx, {
+        type: 'line',
+        data: {
+            labels: sortedMonths,
+            datasets: [{
+                label: '收藏数量',
+                data: sortedMonths.map(m => monthlyFavoritesData[m]),
+                borderColor: 'rgba(102, 126, 234, 1)',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: 'rgba(102, 126, 234, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#fff' } },
+                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#fff', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                }
+            }
+        }
+    });
+
+    // 月度平均评分趋势 - 折线图
+    const monthlyRatingsCtx = document.getElementById('monthlyRatingsChart').getContext('2d');
+    const monthlyRatingsData = JSON.parse('{{ monthly_avg_ratings|escapejs }}');
+    const sortedRatingMonths = Object.keys(monthlyRatingsData).sort();
+    new Chart(monthlyRatingsCtx, {
+        type: 'line',
+        data: {
+            labels: sortedRatingMonths,
+            datasets: [{
+                label: '平均评分',
+                data: sortedRatingMonths.map(m => parseFloat(monthlyRatingsData[m]).toFixed(2)),
+                borderColor: 'rgba(250, 112, 154, 1)',
+                backgroundColor: 'rgba(250, 112, 154, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: 'rgba(250, 112, 154, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#fff' } },
+                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10,
+                    ticks: { color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+
