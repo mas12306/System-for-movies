@@ -143,5 +143,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ==================== AI推荐配置 ====================
 # 通义千问API配置
 # 获取API Key: https://dashscope.console.aliyun.com/
-QWEN_API_KEY = ''  # 请在此处填入你的通义千问API Key
+QWEN_API_KEY = ''  # 通义千问API Key，原本有，此处为保存隐私，删除
 QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'

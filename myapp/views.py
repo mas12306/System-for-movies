@@ -551,7 +551,10 @@ def _build_recommendation_prompt(user_data):
     "analysis": "对用户观影偏好的简短分析（50字以内）",
     "recommendations": [
         {{
-            "title": "电影标题（必须是准确的电影名称）",
+            "title": "电影标题（准确的电影名称）",
+            "type": "电影类型（如：剧情、喜剧、动作等）",
+            "region": "电影地区（如：美国、中国、日本等）",
+            "score": 8.5,
             "reason": "推荐理由（20-30字）"
         }}
     ]
@@ -559,8 +562,10 @@ def _build_recommendation_prompt(user_data):
 
 注意：
 1. 只返回JSON，不要其他文字
-2. 电影标题必须准确，以便在数据库中查找
-3. 推荐理由要具体说明为什么适合这个用户"""
+2. 电影标题要准确
+3. type和region字段尽量填写，如果不知道可以填"未知"
+4. score字段填写豆瓣评分（0-10之间的数字），如果不知道可以填null
+5. 推荐理由要具体说明为什么适合这个用户"""
     
     return prompt
 
@@ -571,7 +576,7 @@ def _call_qwen_api(prompt):
     api_url = getattr(settings, 'QWEN_API_URL', 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation')
     
     if not api_key:
-        return None, "API Key未配置"
+        return None, None, "API Key未配置"
     
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -603,16 +608,29 @@ def _call_qwen_api(prompt):
         response.raise_for_status()
         result = response.json()
         
-        # 解析通义千问的响应格式
-        if 'output' in result and 'choices' in result['output']:
-            content = result['output']['choices'][0]['message']['content']
-            return content, None
+        # 解析通义千问的响应格式（支持多种格式）
+        content = None
+        raw_response = str(result)  # 保存原始响应用于调试
+        
+        # 格式1: output.text (新版本API)
+        if 'output' in result and 'text' in result['output']:
+            content = result['output']['text']
+        # 格式2: output.choices[0].message.content (旧版本API)
+        elif 'output' in result and 'choices' in result['output']:
+            if len(result['output']['choices']) > 0:
+                if 'message' in result['output']['choices'][0]:
+                    content = result['output']['choices'][0]['message']['content']
+                elif 'text' in result['output']['choices'][0]:
+                    content = result['output']['choices'][0]['text']
+        
+        if content:
+            return content, raw_response, None
         else:
-            return None, f"API响应格式错误: {result}"
+            return None, raw_response, f"API响应格式错误，无法提取内容。响应: {result}"
     except requests.exceptions.RequestException as e:
-        return None, f"API请求失败: {str(e)}"
+        return None, None, f"API请求失败: {str(e)}"
     except Exception as e:
-        return None, f"API调用异常: {str(e)}"
+        return None, None, f"API调用异常: {str(e)}"
 
 
 def _extract_json_from_response(text):
@@ -673,13 +691,14 @@ def ai_recommend_api(request):
     prompt = _build_recommendation_prompt(user_data)
     
     # 调用AI API
-    ai_response, error_msg = _call_qwen_api(prompt)
+    ai_response, raw_response, error_msg = _call_qwen_api(prompt)
     
     if not ai_response:
         return JsonResponse({
             "success": False,
             "error": "API调用失败",
-            "message": error_msg or "请稍后重试"
+            "message": error_msg or "请稍后重试",
+            "raw_response": raw_response if raw_response else None  # 返回原始响应用于调试
         }, status=500)
     
     # 解析AI返回的JSON
@@ -687,58 +706,71 @@ def ai_recommend_api(request):
         ai_data = _extract_json_from_response(ai_response)
         
         if not ai_data:
+            # 如果JSON解析失败，返回原始回答和错误信息
             return JsonResponse({
                 "success": False,
-                "error": "解析失败",
-                "message": "AI返回格式不正确，请重试"
+                "error": "JSON解析失败",
+                "message": "AI返回格式不正确，但已显示原始回答",
+                "raw_ai_response": ai_response,  # 返回原始AI回答
+                "raw_api_response": raw_response  # 返回完整API响应
             }, status=500)
         
-        # 根据电影标题查找数据库中的电影
+        # 直接使用AI返回的电影信息，不查找数据库
         recommendations = []
         for rec in ai_data.get('recommendations', []):
             title = rec.get('title', '').strip()
             if not title:
                 continue
             
-            # 尝试精确匹配
+            # 尝试在数据库中查找（可选，用于获取海报等额外信息）
             movie = Movie.objects.filter(title=title).first()
-            
-            # 如果精确匹配失败，尝试模糊匹配
             if not movie:
                 movie = Movie.objects.filter(title__icontains=title).first()
             
-            if movie:
-                recommendations.append({
-                    "id": movie.id,
-                    "title": movie.title,
-                    "poster": movie.poster or "",
-                    "score": movie.score,
-                    "type": movie.type or "",
-                    "region": movie.region or "",
-                    "reason": rec.get('reason', '推荐给你')
-                })
+            # 使用AI返回的数据，如果数据库中有则补充海报等信息
+            recommendation = {
+                "id": movie.id if movie else None,
+                "title": title,
+                "poster": movie.poster if movie and movie.poster else "",
+                "score": rec.get('score') or (movie.score if movie else None),
+                "type": rec.get('type') or (movie.type if movie else "") or "未知",
+                "region": rec.get('region') or (movie.region if movie else "") or "未知",
+                "reason": rec.get('reason', '推荐给你')
+            }
+            recommendations.append(recommendation)
         
-        if not recommendations:
-            return JsonResponse({
-                "success": False,
-                "error": "未找到匹配电影",
-                "message": "AI推荐的电影在数据库中未找到，请重试"
-            }, status=404)
-        
-        return JsonResponse({
+        # 构建返回数据，包含原始回答
+        response_data = {
             "success": True,
             "analysis": ai_data.get('analysis', '基于你的观影偏好，为你推荐以下电影'),
-            "recommendations": recommendations
-        })
+            "recommendations": recommendations,
+            "raw_ai_response": ai_response,  # 添加原始AI回答
+        }
+        
+        if not recommendations:
+            # 即使没有推荐，也返回原始回答
+            response_data.update({
+                "success": False,
+                "error": "无推荐数据",
+                "message": "AI未返回推荐电影，但已显示AI的原始回答",
+            })
+            return JsonResponse(response_data, status=404)
+        
+        return JsonResponse(response_data)
     except json.JSONDecodeError as e:
+        # JSON解析失败时，返回原始回答
         return JsonResponse({
             "success": False,
             "error": "JSON解析失败",
-            "message": f"解析错误: {str(e)}"
+            "message": f"解析错误: {str(e)}，但已显示原始回答",
+            "raw_ai_response": ai_response,  # 返回原始AI回答
+            "raw_api_response": raw_response  # 返回完整API响应
         }, status=500)
     except Exception as e:
         return JsonResponse({
             "success": False,
             "error": "处理失败",
-            "message": str(e)
+            "message": str(e),
+            "raw_ai_response": ai_response if 'ai_response' in locals() else None,
+            "raw_api_response": raw_response if 'raw_response' in locals() else None
         }, status=500)

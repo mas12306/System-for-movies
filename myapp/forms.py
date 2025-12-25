@@ -81,11 +81,12 @@ class RegistrationForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = UserInfo
-        fields = ["nickname", "email", "sex", "age"]
+        fields = ["username", "nickname", "email", "sex", "age"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         widgets_map = {
+            "username": "form-control",
             "nickname": "form-control",
             "email": "form-control",
             "sex": "form-select",
@@ -94,6 +95,24 @@ class ProfileForm(forms.ModelForm):
         for name, css in widgets_map.items():
             if name in self.fields:
                 self.fields[name].widget.attrs.update({"class": css})
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username")
+        if username:
+            # 检查用户名是否已被其他用户使用（排除当前用户）
+            existing_user = UserInfo.objects.filter(username=username).exclude(pk=self.instance.pk).first()
+            if existing_user:
+                raise forms.ValidationError("该用户名已被使用，请选择其他用户名")
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if email:
+            # 检查邮箱是否已被其他用户使用（排除当前用户）
+            existing_user = UserInfo.objects.filter(email=email).exclude(pk=self.instance.pk).first()
+            if existing_user:
+                raise forms.ValidationError("该邮箱已被注册，请使用其他邮箱")
+        return email
 
 
 class PasswordUpdateForm(PasswordChangeForm):

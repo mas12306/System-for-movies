@@ -82,6 +82,9 @@
                 <div class="chart-container">
                     <canvas id="ratingPieChart"></canvas>
                 </div>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">显示你评分影片的分数分布情况</small>
+                </div>
             </div>
         </div>
 
@@ -91,6 +94,9 @@
                 <h5 class="section-title">收藏类型偏好</h5>
                 <div class="chart-container">
                     <canvas id="favoriteTypesChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted d-block">说明：柱状图显示你收藏的影片类型分布，数值越大表示该类型收藏越多</small>
                 </div>
             </div>
         </div>
@@ -102,6 +108,9 @@
                 <div class="chart-container">
                     <canvas id="ratedTypesChart"></canvas>
                 </div>
+                <div class="mt-3">
+                    <small class="text-muted d-block">说明：柱状图显示你评分的影片类型分布，数值越大表示该类型评分越多</small>
+                </div>
             </div>
         </div>
 
@@ -111,6 +120,9 @@
                 <h5 class="section-title">收藏地区偏好</h5>
                 <div class="chart-container">
                     <canvas id="favoriteRegionsChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted d-block">说明：柱状图显示你收藏的影片地区分布，数值越大表示该地区收藏越多</small>
                 </div>
             </div>
         </div>
@@ -122,6 +134,9 @@
                 <div class="chart-container">
                     <canvas id="monthlyFavoritesChart"></canvas>
                 </div>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">显示每月收藏的影片数量变化趋势</small>
+                </div>
             </div>
         </div>
 
@@ -131,6 +146,9 @@
                 <h5 class="section-title">月度平均评分趋势</h5>
                 <div class="chart-container">
                     <canvas id="monthlyRatingsChart"></canvas>
+                </div>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">显示每月评分的平均分数变化趋势（满分10分）</small>
                 </div>
             </div>
         </div>
@@ -172,7 +190,20 @@
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: { color: '#fff', padding: 15 }
+                    labels: { 
+                        color: '#333',
+                        padding: 15,
+                        font: { size: 12 },
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + ' 部影片';
+                        }
+                    }
                 }
             }
         }
@@ -181,13 +212,16 @@
     // 收藏类型统计 - 柱形图
     const favoriteTypesCtx = document.getElementById('favoriteTypesChart').getContext('2d');
     const favoriteTypesData = JSON.parse('{{ top_types|escapejs }}');
-    new Chart(favoriteTypesCtx, {
+    const favoriteTypesLabels = Object.keys(favoriteTypesData);
+    const favoriteTypesValues = Object.values(favoriteTypesData);
+    
+    const favoriteTypesChart = new Chart(favoriteTypesCtx, {
         type: 'bar',
         data: {
-            labels: Object.keys(favoriteTypesData),
+            labels: favoriteTypesLabels,
             datasets: [{
                 label: '收藏数量',
-                data: Object.values(favoriteTypesData),
+                data: favoriteTypesValues,
                 backgroundColor: 'rgba(102, 126, 234, 0.8)',
                 borderColor: 'rgba(102, 126, 234, 1)',
                 borderWidth: 2,
@@ -199,17 +233,34 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+                tooltip: { 
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' 部影片';
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { color: '#fff', stepSize: 1 },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333', stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '收藏数量（部）',
+                        color: '#333'
+                    }
                 },
                 x: {
-                    ticks: { color: '#fff' },
-                    grid: { display: false }
+                    ticks: { color: '#333', maxRotation: 45, minRotation: 0 },
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: '影片类型',
+                        color: '#333'
+                    }
                 }
             }
         }
@@ -218,13 +269,16 @@
     // 评分类型统计 - 柱形图
     const ratedTypesCtx = document.getElementById('ratedTypesChart').getContext('2d');
     const ratedTypesData = JSON.parse('{{ top_rated_types|escapejs }}');
-    new Chart(ratedTypesCtx, {
+    const ratedTypesLabels = Object.keys(ratedTypesData);
+    const ratedTypesValues = Object.values(ratedTypesData);
+    
+    const ratedTypesChart = new Chart(ratedTypesCtx, {
         type: 'bar',
         data: {
-            labels: Object.keys(ratedTypesData),
+            labels: ratedTypesLabels,
             datasets: [{
                 label: '评分数量',
-                data: Object.values(ratedTypesData),
+                data: ratedTypesValues,
                 backgroundColor: 'rgba(250, 112, 154, 0.8)',
                 borderColor: 'rgba(250, 112, 154, 1)',
                 borderWidth: 2,
@@ -236,17 +290,34 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+                tooltip: { 
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' 部影片';
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { color: '#fff', stepSize: 1 },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333', stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '评分数量（部）',
+                        color: '#333'
+                    }
                 },
                 x: {
-                    ticks: { color: '#fff' },
-                    grid: { display: false }
+                    ticks: { color: '#333', maxRotation: 45, minRotation: 0 },
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: '影片类型',
+                        color: '#333'
+                    }
                 }
             }
         }
@@ -255,13 +326,16 @@
     // 收藏地区统计 - 柱形图
     const favoriteRegionsCtx = document.getElementById('favoriteRegionsChart').getContext('2d');
     const favoriteRegionsData = JSON.parse('{{ top_regions|escapejs }}');
-    new Chart(favoriteRegionsCtx, {
+    const favoriteRegionsLabels = Object.keys(favoriteRegionsData);
+    const favoriteRegionsValues = Object.values(favoriteRegionsData);
+    
+    const favoriteRegionsChart = new Chart(favoriteRegionsCtx, {
         type: 'bar',
         data: {
-            labels: Object.keys(favoriteRegionsData),
+            labels: favoriteRegionsLabels,
             datasets: [{
                 label: '收藏数量',
-                data: Object.values(favoriteRegionsData),
+                data: favoriteRegionsValues,
                 backgroundColor: 'rgba(48, 207, 208, 0.8)',
                 borderColor: 'rgba(48, 207, 208, 1)',
                 borderWidth: 2,
@@ -273,17 +347,34 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+                tooltip: { 
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' 部影片';
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { color: '#fff', stepSize: 1 },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333', stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '收藏数量（部）',
+                        color: '#333'
+                    }
                 },
                 x: {
-                    ticks: { color: '#fff' },
-                    grid: { display: false }
+                    ticks: { color: '#333', maxRotation: 45, minRotation: 0 },
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: '影片地区',
+                        color: '#333'
+                    }
                 }
             }
         }
@@ -319,12 +410,22 @@
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { color: '#fff', stepSize: 1 },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333', stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '收藏数量（部）',
+                        color: '#333'
+                    }
                 },
                 x: {
-                    ticks: { color: '#fff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333' },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '月份',
+                        color: '#333'
+                    }
                 }
             }
         }
@@ -361,12 +462,22 @@
                 y: {
                     beginAtZero: true,
                     max: 10,
-                    ticks: { color: '#fff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333' },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '平均评分（分）',
+                        color: '#333'
+                    }
                 },
                 x: {
-                    ticks: { color: '#fff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { color: '#333' },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    title: {
+                        display: true,
+                        text: '月份',
+                        color: '#333'
+                    }
                 }
             }
         }

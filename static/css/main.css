@@ -69,7 +69,7 @@ body {
 }
 
 .ratio-2x3::before {
-    padding-top: 150%; /* 2:3 比例 */
+    padding-top: 150%; /* 调整后的比例，高度更小 */
 }
 
 .object-fit-cover {
